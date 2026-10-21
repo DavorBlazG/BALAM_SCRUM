@@ -101,7 +101,3 @@ BALAM es un proyecto educativo. Está previsto utilizar una biblioteca criptogr�
 
 **Estado del proyecto:** Sprint 1 — Desarrollo inicial.
 
----
-
-**Grupo 11 — BALAM**  
-Tecnología de la Productividad | 2026
