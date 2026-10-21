@@ -1,38 +1,46 @@
-
+// BALAM - punt d'entrada
+// Creació i verificació de la contrasenya mestra connectades.
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
+#include "auth.h"
+
 // Funcion para crear la contrasena maestra
+// Canvis: entrada oculta + es guarda el hash a master.dat amb auth::guardarMestra
 bool crearContrasenaMaestra(std::string& contrasenaMaestra)
 {
-    std::string contrasena;
-    std::string confirmar;
-
     std::cout << "=== BALAM ===\n";
     std::cout << "Crear contrasena maestra\n\n";
 
-    std::cout << "Introduce una contrasena (minimo 8 caracteres): ";
-    std::getline(std::cin, contrasena);
+    std::string contrasena = auth::llegirOcult("Introduce una contrasena (minimo 8 caracteres): ");
 
     // Comprobar la longitud
-    if (contrasena.length() < 8)
+    if (contrasena.length() < auth::LONGITUD_MINIMA)
     {
         std::cout << "Error: la contrasena es demasiado corta.\n";
         return false;
     }
 
     // Confirmar la contrasena
-    std::cout << "Repite la contrasena: ";
-    std::getline(std::cin, confirmar);
-
+    std::string confirmar = auth::llegirOcult("Repite la contrasena: ");
     if (contrasena != confirmar)
     {
         std::cout << "Error: las contrasenas no coinciden.\n";
         return false;
     }
 
-    contrasenaMaestra = contrasena;
+    try
+    {
+        auth::guardarMestra(contrasena);   // NOU: sense això, al tancar el programa es perd
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error: " << e.what() << "\n";
+        return false;
+    }
 
+    contrasenaMaestra = contrasena;
     std::cout << "\nContrasena maestra creada correctamente.\n";
     return true;
 }
@@ -40,14 +48,21 @@ bool crearContrasenaMaestra(std::string& contrasenaMaestra)
 int main()
 {
     std::string contrasenaMaestra;
-    bool creada = false;
 
-    while (!creada)
+    if (!auth::existeixMestra())
     {
-        creada = crearContrasenaMaestra(contrasenaMaestra);
+        // Primera vegada: crear
+        while (!crearContrasenaMaestra(contrasenaMaestra)) {}
+        std::cout << "\nConfiguracion inicial completada.\n";
+    }
+    else
+    {
+        // Les següents vegades: verificar
+        if (!auth::demanarMestra(contrasenaMaestra))
+            return 1;
     }
 
-    std::cout << "\nConfiguracion inicial completada.\n";
-
+    // Aquí anirà el menú principal
+    std::cout << "\n[Menu principal]\n";
     return 0;
 }
