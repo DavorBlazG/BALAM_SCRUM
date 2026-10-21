@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balam | Bóveda Segura</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        selva: '#061A14',      /* Fondo profundo selva */
+                        panel: '#0C2A20',      /* Fondo de tarjetas */
+                        milpa: '#4A5D23',      /* Verde milpa (bordes/acentos) */
+                        ocre: '#C58B3F',       /* Ocre Jaguar (hover) */
+                        maiz: '#E6C280',       /* Amarillo Maíz (primario) */
+                        negro_humo: '#2B2B2B', /* Iconos oscuros */
+                        ceniza: '#A9A9A9',     /* Textos secundarios */
+                        texto: '#E5E7EB',      /* Textos principales */
+                        peligro: '#991B1B'     /* Rojo para eliminar */
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar para la bóveda */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #061A14; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4A5D23; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #C58B3F; 
+        }
+        /* Ocultar flechas en input type number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body class="bg-selva text-texto font-sans antialiased min-h-screen flex flex-col overflow-hidden">
+
+    <!-- CONTENEDOR DE NOTIFICACIONES (Toasts) -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2"></div>
+
+    <!-- PANTALLA DE BLOQUEO (Contraseña Maestra) -->
+    <div id="login-view" class="fixed inset-0 z-50 flex items-center justify-center bg-selva transition-opacity duration-500">
+        <div class="bg-panel border border-milpa/50 p-10 rounded-2xl shadow-2xl max-w-md w-full text-center relative overflow-hidden">
+            <!-- Efecto de luz de fondo -->
+            <div class="absolute -top-20 -right-20 w-40 h-40 bg-milpa/20 rounded-full blur-[50px] pointer-events-none"></div>
+            
+            <i class="ph ph-paw-print text-maiz text-6xl mb-4 drop-shadow-[0_0_15px_rgba(230,194,128,0.3)]"></i>
+            <h1 class="text-3xl font-bold text-maiz mb-2">Balam</h1>
+            <p class="text-ceniza mb-8">Introduce tu contraseña maestra para acceder a la bóveda.</p>
+            
+            <form id="login-form" class="space-y-6">
+                <div class="relative">
+                    <i class="ph ph-lock-key absolute left-3 top-1/2 -translate-y-1/2 text-ceniza text-xl"></i>
+                    <input type="password" id="master-password" placeholder="Contraseña maestra" required
+                           class="w-full bg-selva border border-milpa/50 rounded-lg py-3 pl-10 pr-4 text-texto placeholder-ceniza focus:outline-none focus:border-maiz focus:ring-1 focus:ring-maiz transition-colors">
+                </div>
+                <button type="submit" class="w-full bg-maiz text-negro_humo font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-ocre transition-colors shadow-lg shadow-maiz/10">
+                    <i class="ph ph-lock-key-open text-xl"></i>
+                    Desbloquear Bóveda
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- BÓVEDA PRINCIPAL (Dashboard) -->
+    <div id="dashboard-view" class="hidden flex-col h-screen w-full">
+        <!-- Barra de Navegación -->
+        <nav class="border-b border-milpa/40 bg-panel shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 rounded-full bg-maiz flex items-center justify-center">
+                        <i class="ph ph-paw-print text-negro_humo text-2xl"></i>
+                    </div>
+                    <span class="font-bold text-xl text-maiz">Bóveda Balam</span>
+                </div>
+                <button onclick="lockVault()" class="text-ceniza hover:text-maiz transition-colors flex items-center gap-2 p-2 rounded-lg hover:bg-selva">
+                    <i class="ph ph-sign-out text-xl"></i>
+                    <span class="hidden sm:inline">Cerrar Sesión</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Área Principal -->
+        <main class="flex-grow flex flex-col max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 h-full overflow-hidden">
+            
+            <!-- Cabecera de acciones -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div class="relative w-full sm:w-96">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-ceniza text-xl"></i>
+                    <input type="text" id="search-input" placeholder="Buscar servicio o usuario..." 
+                           class="w-full bg-panel border border-milpa/50 rounded-lg py-2 pl-10 pr-4 text-texto placeholder-ceniza focus:outline-none focus:border-maiz focus:ring-1 focus:ring-maiz transition-colors">
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openGeneratorModal()" class="flex-1 sm:flex-none border border-maiz text-maiz px-4 py-2 rounded-lg font-semibold hover:bg-maiz hover:text-negro_humo transition-colors flex items-center justify-center gap-2">
+                        <i class="ph ph-dice-five text-xl"></i>
+                        Generador
+                    </button>
+                    <button onclick="openEntryModal()" class="flex-1 sm:flex-none bg-maiz text-negro_humo px-4 py-2 rounded-lg font-bold hover:bg-ocre transition-colors flex items-center justify-center gap-2 shadow-lg shadow-maiz/10">
+                        <i class="ph ph-plus-circle text-xl"></i>
+                        Añadir
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Contraseñas -->
+            <div class="flex-grow bg-panel border border-milpa/30 rounded-xl overflow-hidden flex flex-col">
+                <div class="overflow-y-auto flex-grow p-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-selva/50 sticky top-0 backdrop-blur-sm z-10">
+                            <tr>
+                                <th class="py-3 px-4 text-ceniza font-semibold text-sm border-b border-milpa/30">Servicio</th>
+                                <th class="py-3 px-4 text-ceniza font-semibold text-sm border-b border-milpa/30">Usuario / Email</th>
+                                <th class="py-3 px-4 text-ceniza font-semibold text-sm border-b border-milpa/30">Contraseña</th>
+                                <th class="py-3 px-4 text-ceniza font-semibold text-sm border-b border-milpa/30 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entries-list" class="divide-y divide-milpa/10">
+                            <!-- Las entradas se generarán con JS -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Mensaje de estado vacío -->
+                    <div id="empty-state" class="hidden flex-col items-center justify-center py-20 text-ceniza">
+                        <i class="ph ph-folder-open text-6xl mb-4 opacity-50"></i>
+                        <p class="text-lg">No se encontraron entradas.</p>
+                        <p class="text-sm opacity-70">Añade tu primera contraseña para empezar.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: AÑADIR/EDITAR ENTRADA -->
+    <div id="entry-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-selva/80 backdrop-blur-sm">
+        <div class="bg-panel border border-milpa p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 relative transform transition-transform scale-95 opacity-0" id="entry-modal-content">
+            <button onclick="closeEntryModal()" class="absolute top-4 right-4 text-ceniza hover:text-maiz transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+            <h2 id="modal-title" class="text-2xl font-bold text-maiz mb-6">Añadir Entrada</h2>
+            
+            <form id="entry-form" class="space-y-4">
+                <input type="hidden" id="entry-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-ceniza mb-1">Nombre del Servicio *</label>
+                    <div class="relative">
+                        <i class="ph ph-globe absolute left-3 top-1/2 -translate-y-1/2 text-ceniza"></i>
+                        <input type="text" id="entry-service" required placeholder="Ej. GitHub, Banco, Correo"
+                               class="w-full bg-selva border border-milpa/50 rounded-lg py-2 pl-9 pr-3 text-texto focus:border-maiz focus:ring-1 focus:ring-maiz outline-none transition-colors">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-ceniza mb-1">Usuario o Email</label>
+                    <div class="relative">
+                        <i class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-ceniza"></i>
+                        <input type="text" id="entry-username" placeholder="Ej. usuario@mail.com"
+                               class="w-full bg-selva border border-milpa/50 rounded-lg py-2 pl-9 pr-3 text-texto focus:border-maiz focus:ring-1 focus:ring-maiz outline-none transition-colors">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-ceniza mb-1">Contraseña *</label>
+                    <div class="relative">
+                        <i class="ph ph-key absolute left-3 top-1/2 -translate-y-1/2 text-ceniza"></i>
+                        <input type="password" id="entry-password" required placeholder="••••••••"
+                               class="w-full bg-selva border border-milpa/50 rounded-lg py-2 pl-9 pr-10 text-texto focus:border-maiz focus:ring-1 focus:ring-maiz outline-none transition-colors">
+                        <button type="button" onclick="togglePasswordVisibility('entry-password', 'entry-eye-icon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-ceniza hover:text-texto focus:outline-none">
+                            <i id="entry-eye-icon" class="ph ph-eye text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4 mt-6 border-t border-milpa/30">
+                    <button type="button" onclick="closeEntryModal()" class="flex-1 bg-selva text-texto border border-milpa py-2 rounded-lg hover:bg-milpa/20 transition-colors font-semibold">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-maiz text-negro_humo py-2 rounded-lg hover:bg-ocre transition-colors font-bold shadow-lg">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: GENERADOR DE CONTRASEÑAS -->
+    <div id="generator-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-selva/80 backdrop-blur-sm">
+        <div class="bg-panel border border-milpa p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 relative transform transition-transform scale-95 opacity-0" id="generator-modal-content">
+            <button onclick="closeGeneratorModal()" class="absolute top-4 right-4 text-ceniza hover:text-maiz transition-colors">
+                <i class="ph ph-x text-2xl"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-maiz flex items-center justify-center shadow-lg">
+                    <i class="ph ph-dice-five text-negro_humo text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-maiz">Generador</h2>
+            </div>
+            
+            <div class="bg-selva border border-milpa/50 p-4 rounded-lg mb-6 flex justify-between items-center relative overflow-hidden group">
+                <span id="generated-password" class="text-xl font-mono text-texto tracking-wider break-all pr-8">••••••••</span>
+                <button onclick="copyGeneratedPassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-maiz hover:text-ocre transition-colors bg-selva p-1 rounded">
+                    <i class="ph ph-copy text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-ceniza">Longitud</span>
+                        <span id="length-val" class="font-bold text-maiz">16</span>
+                    </div>
+                    <input type="range" id="gen-length" min="8" max="32" value="16" 
+                           class="w-full h-2 bg-selva rounded-lg appearance-none cursor-pointer accent-maiz">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" id="gen-upper" checked class="w-5 h-5 rounded border-milpa text-maiz focus:ring-maiz bg-selva accent-maiz">
+                        <span class="text-texto group-hover:text-maiz transition-colors">Mayúsculas (A-Z)</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" id="gen-lower" checked class="w-5 h-5 rounded border-milpa text-maiz focus:ring-maiz bg-selva accent-maiz">
+                        <span class="text-texto group-hover:text-maiz transition-colors">Minúsculas (a-z)</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" id="gen-numbers" checked class="w-5 h-5 rounded border-milpa text-maiz focus:ring-maiz bg-selva accent-maiz">
+                        <span class="text-texto group-hover:text-maiz transition-colors">Números (0-9)</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" id="gen-symbols" checked class="w-5 h-5 rounded border-milpa text-maiz focus:ring-maiz bg-selva accent-maiz">
+                        <span class="text-texto group-hover:text-maiz transition-colors">Símbolos (!@#$%)</span>
+                    </label>
+                </div>
+
+                <button onclick="generatePassword()" class="w-full bg-milpa text-white py-3 rounded-lg hover:bg-[#5a712a] transition-colors font-bold shadow-lg flex items-center justify-center gap-2 mt-4">
+                    <i class="ph ph-arrows-clockwise text-xl"></i>
+                    Generar Nueva
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        // --- ESTADO INICIAL (Simulación de datos) ---
+        let entries = [
+            { id: 1, service: 'ProtonMail', username: 'balam.secret@proton.me', password: 'secure_password_123' },
+            { id: 2, service: 'Banco Maya', username: '09876543', password: 'bank_pass_456!' },
+            { id: 3, service: 'GitHub', username: 'dev-balam', password: 'ghp_secretToken_890' }
+        ];
+
+        // --- SISTEMA DE NOTIFICACIONES (Toasts) ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgColor = type === 'success' ? 'bg-milpa' : 'bg-peligro';
+            let icon = type === 'success' ? 'ph-check-circle' : 'ph-warning-circle';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-y-full opacity-0`;
+            toast.innerHTML = `
+                <i class="ph ${icon} text-xl"></i>
+                <span class="font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animar entrada
+            setTimeout(() => {
+                toast.classList.remove('translate-y-full', 'opacity-0');
+            }, 10);
+            
+            // Auto eliminar
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- LÓGICA DE AUTENTICACIÓN ---
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const pass = document.getElementById('master-password').value;
+            // Simulamos verificación (cualquier contraseña funciona en esta demo, pero exigimos algo)
+            if(pass.length >= 4) {
+                document.getElementById('login-view').classList.add('opacity-0');
+                setTimeout(() => {
+                    document.getElementById('login-view').classList.add('hidden');
+                    document.getElementById('dashboard-view').classList.remove('hidden');
+                    document.getElementById('dashboard-view').classList.add('flex');
+                    renderEntries();
+                    showToast('Bóveda desbloqueada con éxito');
+                }, 500);
+            } else {
+                showToast('La contraseña debe tener al menos 4 caracteres', 'error');
+            }
+        });
+
+        function lockVault() {
+            document.getElementById('master-password').value = '';
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('flex');
+            
+            const loginView = document.getElementById('login-view');
+            loginView.classList.remove('hidden');
+            setTimeout(() => {
+                loginView.classList.remove('opacity-0');
+                showToast('Bóveda bloqueada');
+            }, 50);
+        }
+
+        // --- LÓGICA DEL DASHBOARD (Lista y Búsqueda) ---
+        function renderEntries(searchTerm = '') {
+            const list = document.getElementById('entries-list');
+            const emptyState = document.getElementById('empty-state');
+            list.innerHTML = '';
+            
+            const filtered = entries.filter(e => 
+                e.service.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                e.username.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            } else {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                
+                filtered.forEach(entry => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-selva/50 transition-colors group';
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 border-b border-milpa/10">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-panel border border-milpa flex items-center justify-center text-maiz">
+                                    ${entry.service.charAt(0).toUpperCase()}
+                                </div>
+                                <span class="font-medium text-texto">${entry.service}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 border-b border-milpa/10 text-ceniza">${entry.username || '-'}</td>
+                        <td class="py-3 px-4 border-b border-milpa/10">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-ceniza tracking-widest text-xs mt-1" id="pass-mask-${entry.id}">••••••••</span>
+                                <span class="font-mono text-texto hidden" id="pass-reveal-${entry.id}">${entry.password}</span>
+                                <button onclick="toggleRowPassword(${entry.id})" class="text-ceniza hover:text-maiz p-1 rounded" title="Mostrar/Ocultar">
+                                    <i class="ph ph-eye" id="eye-icon-${entry.id}"></i>
+                                </button>
+                                <button onclick="copyText('${entry.password}')" class="text-ceniza hover:text-maiz p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity" title="Copiar">
+                                    <i class="ph ph-copy"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 border-b border-milpa/10 text-right">
+                            <div class="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button onclick="editEntry(${entry.id})" class="p-2 text-ceniza hover:text-maiz rounded bg-panel hover:bg-selva transition-colors" title="Editar">
+                                    <i class="ph ph-pencil-simple text-lg"></i>
+                                </button>
+                                <button onclick="deleteEntry(${entry.id})" class="p-2 text-ceniza hover:text-peligro rounded bg-panel hover:bg-selva transition-colors" title="Eliminar">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                });
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            renderEntries(e.target.value);
+        });
+
+        // Toggle visor de contraseña en la tabla
+        function toggleRowPassword(id) {
+            const mask = document.getElementById(`pass-mask-${id}`);
+            const reveal = document.getElementById(`pass-reveal-${id}`);
+            const icon = document.getElementById(`eye-icon-${id}`);
+            
+            if (mask.classList.contains('hidden')) {
+                mask.classList.remove('hidden');
+                reveal.classList.add('hidden');
+                icon.classList.replace('ph-eye-slash', 'ph-eye');
+            } else {
+                mask.classList.add('hidden');
+                reveal.classList.remove('hidden');
+                icon.classList.replace('ph-eye', 'ph-eye-slash');
+            }
+        }
+
+        // Utilidad para copiar al portapapeles (Compatible con iFrame)
+        function copyText(text) {
+            const tempInput = document.createElement("input");
+            tempInput.style = "position: absolute; left: -1000px; top: -1000px";
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand("copy");
+                showToast("Copiado al portapapeles");
+            } catch (err) {
+                showToast("Error al copiar", "error");
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        // --- LÓGICA DEL MODAL DE ENTRADAS (Añadir/Editar) ---
+        const entryModal = document.getElementById('entry-modal');
+        const entryModalContent = document.getElementById('entry-modal-content');
+        const entryForm = document.getElementById('entry-form');
+
+        function openEntryModal(id = null) {
+            entryModal.classList.remove('hidden');
+            entryModal.classList.add('flex');
+            
+            // Animar entrada
+            setTimeout(() => {
+                entryModalContent.classList.remove('scale-95', 'opacity-0');
+                entryModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            const title = document.getElementById('modal-title');
+            
+            if (id) {
+                // Modo Edición
+                title.textContent = "Editar Entrada";
+                const entry = entries.find(e => e.id === id);
+                document.getElementById('entry-id').value = entry.id;
+                document.getElementById('entry-service').value = entry.service;
+                document.getElementById('entry-username').value = entry.username;
+                document.getElementById('entry-password').value = entry.password;
+            } else {
+                // Modo Creación
+                title.textContent = "Añadir Entrada";
+                entryForm.reset();
+                document.getElementById('entry-id').value = '';
+            }
+        }
+
+        function closeEntryModal() {
+            entryModalContent.classList.remove('scale-100', 'opacity-100');
+            entryModalContent.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                entryModal.classList.add('hidden');
+                entryModal.classList.remove('flex');
+                entryForm.reset();
+            }, 300);
+        }
+
+        // Guardar/Actualizar
+        entryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('entry-id').value;
+            const service = document.getElementById('entry-service').value;
+            const username = document.getElementById('entry-username').value;
+            const password = document.getElementById('entry-password').value;
+
+            if (id) {
+                // Actualizar
+                const index = entries.findIndex(e => e.id == id);
+                entries[index] = { id: parseInt(id), service, username, password };
+                showToast("Entrada actualizada");
+            } else {
+                // Añadir nuevo
+                const newId = entries.length > 0 ? Math.max(...entries.map(e => e.id)) + 1 : 1;
+                entries.push({ id: newId, service, username, password });
+                showToast("Nueva entrada guardada");
+            }
+            
+            closeEntryModal();
+            renderEntries(document.getElementById('search-input').value);
+        });
+
+        // Eliminar
+        function deleteEntry(id) {
+            // Usamos un modal o confirmación simulada. Para evitar alert(), lo borramos directo con notificación deshacer o simplemente avisamos.
+            entries = entries.filter(e => e.id !== id);
+            renderEntries(document.getElementById('search-input').value);
+            showToast("Entrada eliminada permanentemente", "error");
+        }
+
+        function editEntry(id) {
+            openEntryModal(id);
+        }
+
+        // Mostrar/Ocultar contraseña en el input del modal
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('ph-eye', 'ph-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('ph-eye-slash', 'ph-eye');
+            }
+        }
+
+        // --- LÓGICA DEL GENERADOR ---
+        const genModal = document.getElementById('generator-modal');
+        const genModalContent = document.getElementById('generator-modal-content');
+        
+        const lengthInput = document.getElementById('gen-length');
+        const lengthVal = document.getElementById('length-val');
+        
+        lengthInput.addEventListener('input', (e) => {
+            lengthVal.textContent = e.target.value;
+            generatePassword(); // Regenera al mover el slider
+        });
+
+        function openGeneratorModal() {
+            genModal.classList.remove('hidden');
+            genModal.classList.add('flex');
+            setTimeout(() => {
+                genModalContent.classList.remove('scale-95', 'opacity-0');
+                genModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            generatePassword();
+        }
+
+        function closeGeneratorModal() {
+            genModalContent.classList.remove('scale-100', 'opacity-100');
+            genModalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                genModal.classList.add('hidden');
+                genModal.classList.remove('flex');
+            }, 300);
+        }
+
+        function generatePassword() {
+            const length = parseInt(lengthInput.value);
+            const hasUpper = document.getElementById('gen-upper').checked;
+            const hasLower = document.getElementById('gen-lower').checked;
+            const hasNumbers = document.getElementById('gen-numbers').checked;
+            const hasSymbols = document.getElementById('gen-symbols').checked;
+
+            const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const lower = 'abcdefghijklmnopqrstuvwxyz';
+            const numbers = '0123456789';
+            const symbols = '!@#$%^&*()_+~`|}{[]:;?><,./-=';
+            
+            let charSet = '';
+            if (hasUpper) charSet += upper;
+            if (hasLower) charSet += lower;
+            if (hasNumbers) charSet += numbers;
+            if (hasSymbols) charSet += symbols;
+
+            if (charSet === '') {
+                document.getElementById('generated-password').textContent = 'Selecciona una opción';
+                return;
+            }
+
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * charSet.length);
+                password += charSet[randomIndex];
+            }
+
+            document.getElementById('generated-password').textContent = password;
+        }
+
+        function copyGeneratedPassword() {
+            const pwd = document.getElementById('generated-password').textContent;
+            if(pwd && pwd !== 'Selecciona una opción') {
+                copyText(pwd);
+            }
+        }
+    </script>
+</body>
+</html>
