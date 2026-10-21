@@ -1,1 +1,1 @@
-(Para el menú interactivo)
+(Para la contraseña maestra)
