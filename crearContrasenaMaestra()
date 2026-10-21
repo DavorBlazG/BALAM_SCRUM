@@ -1,0 +1,53 @@
+
+#include <iostream>
+#include <string>
+
+// Funcion para crear la contrasena maestra
+bool crearContrasenaMaestra(std::string& contrasenaMaestra)
+{
+    std::string contrasena;
+    std::string confirmar;
+
+    std::cout << "=== BALAM ===\n";
+    std::cout << "Crear contrasena maestra\n\n";
+
+    std::cout << "Introduce una contrasena (minimo 8 caracteres): ";
+    std::getline(std::cin, contrasena);
+
+    // Comprobar la longitud
+    if (contrasena.length() < 8)
+    {
+        std::cout << "Error: la contrasena es demasiado corta.\n";
+        return false;
+    }
+
+    // Confirmar la contrasena
+    std::cout << "Repite la contrasena: ";
+    std::getline(std::cin, confirmar);
+
+    if (contrasena != confirmar)
+    {
+        std::cout << "Error: las contrasenas no coinciden.\n";
+        return false;
+    }
+
+    contrasenaMaestra = contrasena;
+
+    std::cout << "\nContrasena maestra creada correctamente.\n";
+    return true;
+}
+
+int main()
+{
+    std::string contrasenaMaestra;
+    bool creada = false;
+
+    while (!creada)
+    {
+        creada = crearContrasenaMaestra(contrasenaMaestra);
+    }
+
+    std::cout << "\nConfiguracion inicial completada.\n";
+
+    return 0;
+}
