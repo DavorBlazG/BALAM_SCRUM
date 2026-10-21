@@ -1,1 +1,1 @@
-(Para guardar las funciones que me pasaste)
+(Para guardar las funciones)
