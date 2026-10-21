@@ -1,1 +1,1 @@
-(Para la contraseña maestra)
+(Para cifrar y descifrar)
