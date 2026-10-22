@@ -1,1 +1,0 @@
-(Para la contraseña maestra)
