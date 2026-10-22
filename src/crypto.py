@@ -1,1 +1,0 @@
-(Para cifrar y descifrar)
