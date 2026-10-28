@@ -27,3 +27,24 @@ else()
     target_link_libraries(BALAM PRIVATE OpenSSL::Crypto)
     target_compile_options(BALAM PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# ---- Pruebas (Sprint 2): boveda cifrada ----
+add_executable(BALAM_tests
+    tests/test_vault.cpp
+    src/console.cpp
+    src/i18n.cpp
+    src/crypto.cpp
+    src/vault.cpp
+)
+target_include_directories(BALAM_tests PRIVATE src)
+if(WIN32)
+    target_compile_definitions(BALAM_tests PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_link_libraries(BALAM_tests PRIVATE bcrypt)
+    if(MSVC)
+        target_compile_options(BALAM_tests PRIVATE /utf-8)
+    endif()
+else()
+    target_link_libraries(BALAM_tests PRIVATE OpenSSL::Crypto)
+endif()
+enable_testing()
+add_test(NAME boveda COMMAND BALAM_tests)
